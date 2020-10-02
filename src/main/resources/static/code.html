@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>代码生成</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body style="padding-top: 20px;">
+<form id="code_f">
+    <p>
+    <h2>此版本仅支持mysql、oracle数据库</h2>
+    <hr/>
+    <br/>
+    1.数据库表：<select id="table" name="table">
+    <option>请选择表</option>
+</select>
+    <br/>
+    2.生成类型：<input type="checkbox" checked disabled="disabled" id="type_" name="type_c" value="domain">&nbsp;bean&nbsp;
+    <input type="checkbox" checked name="type_c" value="repository">&nbsp;repository&nbsp;
+    <input type="checkbox" checked name="type_c" value="service">&nbsp;service&nbsp;
+    <input type="checkbox" checked name="type_c" value="serviceImpl">&nbsp;serviceImpl&nbsp;
+    <input type="checkbox" checked name="type_c" value="controller">&nbsp;controller&nbsp;
+    </p>
+</form>
+<p>
+    <button id='create_btn' onclick="initMainObj.createCode()">确认生成</button>
+</p>
+<script src="jquery-3.3.1.min.js"></script>
+<script>
+    var initMainObj = {
+        loadTable: function () {
+            // 加载数据库表
+            $.post("loadtable", {}, function (data) {
+                for (var i in data) {
+                    $("#table").append("<option value='" + data[i].toLowerCase() + "'>" + data[i].toLowerCase() + "</option>");
+                }
+            });
+        },
+        createCode: function () {
+            var serializeArray = $('#code_f').serializeArray();
+            serializeArray.push({
+                'name': 'type_c',
+                'value': 'bean'
+            });
+            var table = $("#table").val();
+            if (table == '请选择表') {
+                alert('请选择表');
+                return false;
+            }
+            $("#create_btn").attr('disabled', 'disabled');
+            $.post("code/create", {'parmsList': JSON.stringify(serializeArray)}, function (data) {
+                alert(data);
+                $("#create_btn").attr('disabled', false);
+            });
+        }
+    };
+    initMainObj.loadTable();
+</script>
+</body>
+</html>

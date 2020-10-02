@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="spring-data-jpawapper-starter" />
+        <module name="jpa" />
+        <module name="&lt;modules&gt;         &lt;module&gt;spring-data-jpawapper&lt;/module&gt;     &lt;/modules&gt;" />
+        <module name="spring-data-jpawapper" />
+        <module name="demo1" />
+        <module name="framework (1) (com.example)" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="spring-data-jpawapper" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

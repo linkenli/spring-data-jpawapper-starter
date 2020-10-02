@@ -22,9 +22,9 @@
 	<relativePath/> <!-- lookup parent from repository -->
     </parent>
     <dependency>
-    	<groupId>com.github.liubingxu18</groupId>
+    	<groupId>com.github.linken</groupId>
 	<artifactId>spring-data-jpawapper</artifactId>
-	<version>1.0.8</version>
+	<version>1.0.9</version>
     </dependency>
 ```
 
@@ -65,7 +65,6 @@ code-create:
 * 主函数引入注解
 
 ```xml
-    @ComponentScan(basePackages = {"jpa.autocode", "you code package"})  
     @EnableJpaRepositories(repositoryFactoryBeanClass = BaseRepositoryFactoryBean.class)
 ```
 * 代码生成

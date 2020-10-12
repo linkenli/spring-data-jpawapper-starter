@@ -25,6 +25,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.lang.model.element.Modifier;
@@ -171,17 +172,12 @@ public class JavaCreate implements CreateCode {
         ResourceBundle finalResourceBundle = resourceBundle;
         tableList.forEach(t -> {
         	
-        	if ("id,create_by,create_time,update_by,update_time".contains(t.getName().toLowerCase())) {
-        		return;
-        	}
         	List<AnnotationSpec> list = new ArrayList<AnnotationSpec>();
         	
             /** 属性上面的注解 **/
             AnnotationSpec annotationSpecColumn;
             
-            if ("id,create_by,create_time,update_by,update_time".contains(t.getName().toLowerCase())) {
-        		return;
-        	} else if (t.getIsPri().equals("true")) {
+            if (t.getIsPri().equals("true")) {
                 annotationSpecColumn = AnnotationSpec.builder(Id.class).build();
                 list.add(annotationSpecColumn);
                 annotationSpecColumn = AnnotationSpec.builder(GeneratedValue.class)
@@ -228,7 +224,7 @@ public class JavaCreate implements CreateCode {
         TypeSpec typeSpec = builder
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(annotationSpecData)
-                .superclass(ClassName.bestGuess("com.disney.wdpro.wechat.model.BaseEntity"))
+//                .superclass(ClassName.bestGuess("com.disney.wdpro.wechat.model.BaseEntity"))
                 .addAnnotation(annotationSpecEntity)
                 .addAnnotation(annotationSpecTable)
                 .addJavadoc(" @Author: Linken Li\n" +
@@ -243,10 +239,10 @@ public class JavaCreate implements CreateCode {
     }
 
     private void createRepository() {
-        ClassName superClass = ClassName.bestGuess("jpa.repository.BaseRepository");
+        ClassName superClass = ClassName.bestGuess(repositoryPackage + ".BaseDao");
 
         ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
-        ClassName paramTwo = ClassName.bestGuess("java.lang.String");// 泛型第二个参数
+        ClassName paramTwo = ClassName.bestGuess("java.lang.Long");// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
 
         TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getRepositoryName())
@@ -264,39 +260,13 @@ public class JavaCreate implements CreateCode {
     public boolean createServiceClass() {
         ClassName beanClass = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());
 
-        MethodSpec saveMethod = MethodSpec.methodBuilder("saveOrUpdate")
-                .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)// 方法类型
-                .addParameter(beanClass, codeModel.getBeanName().toLowerCase())// 方法参数
-                .returns(beanClass)
-                .build();
-
-        MethodSpec getMethod = MethodSpec.methodBuilder("get" + codeModel.getBeanName() + "ById")
-                .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)
-                .addParameter(String.class, "id")
-                .returns(beanClass)
-                .build();
-
-        MethodSpec deleteMethod = MethodSpec.methodBuilder("delete" + codeModel.getBeanName() + "ByIds")
-                .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)
-                .addParameter(String.class, "ids")
-                .returns(boolean.class)
-                .build();
-
-        MethodSpec pageListMethod = MethodSpec.methodBuilder("pageList")
-                .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)
-                .addParameter(beanClass, codeModel.getBeanName().toLowerCase())
-                .addParameter(int.class, "page")
-                .addParameter(int.class, "pageSize")
-                .returns(Page.class)
-                .build();
 
         TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getServerName())
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
-                .addMethod(saveMethod)
-                .addMethod(getMethod)
-                .addMethod(deleteMethod)
-                .addMethod(pageListMethod)
+                .addSuperinterface(ClassName.bestGuess(servicePackage + ".IService"))
+                .addTypeVariable(TypeVariableName.get("T"))
+                .addTypeVariable(TypeVariableName.get("ID"))
                 .build();
 
         JavaFile javaFile = JavaFile.builder(servicePackage, typeSpec).build();
@@ -306,83 +276,39 @@ public class JavaCreate implements CreateCode {
     }
 
     private void createServiceClassImpl() {
-        ClassName className = ClassName.bestGuess(servicePackage + "." + codeModel.getServerName());
         ClassName repositoryClass = ClassName.bestGuess(repositoryPackage + "." + codeModel.getRepositoryName());
-        ClassName beanClass = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());
+        ClassName superClass = ClassName.bestGuess(servicePackage + "." + codeModel.getServerName());
 
+        ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
+        ClassName paramTwo = ClassName.bestGuess("java.lang.Long");// 泛型第二个参数
+        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
+        
         FieldSpec fieldSpec = FieldSpec.builder(repositoryClass, StringUtil.firstLetterLowerCase(codeModel.getRepositoryName()), Modifier.PRIVATE)
                 .addAnnotation(Autowired.class)
                 .build();
 
+        ClassName baseDao = ClassName.bestGuess(repositoryPackage + ".BaseDao");
+        ParameterizedTypeName returnTypeName =ParameterizedTypeName.get(baseDao, paramOne, paramTwo);
+        		
+        MethodSpec repoMethod = MethodSpec.methodBuilder("getDao")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .addCode("return " + StringUtil.firstLetterLowerCase(codeModel.getRepositoryName()) + ";\n")
+                .returns(returnTypeName)
+                .build();
+        
         String beanParm = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
         String repositoryName = StringUtil.firstLetterLowerCase(codeModel.getRepositoryName());
 
-        MethodSpec saveMethod = MethodSpec.methodBuilder("saveOrUpdate")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(beanClass, StringUtil.firstLetterLowerCase(codeModel.getBeanName()))
-//                .addCode("  if ($T.isEmpty(" + beanParm + ".getId())) {\n" +
-//                        "  " + beanParm + ".setId($T.getUUID());\n" +
-//                        "  }\nreturn $N.save($N);\n", StringUtils.class, UUIDUtils.class, repositoryName, beanParm)
-                .returns(beanClass)
-                .build();
-
-        MethodSpec getMethod = MethodSpec.methodBuilder("get" + codeModel.getBeanName() + "ById")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(String.class, "id")
-                .addStatement("  return " + repositoryName + ".findById(id ).get()")
-                .returns(beanClass)
-                .build();
-
-        MethodSpec deleteMethod = MethodSpec.methodBuilder("delete" + codeModel.getBeanName() + "ByIds")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(String.class, "ids")
-                .addCode("  $T idArr = ids.split(\",\");\n" +
-                        "  " + repositoryName + ".batchDelete($T.asList(idArr));\n" +
-                        "  return true;\n", String[].class, Arrays.class)
-                .returns(TypeName.BOOLEAN)
-                .build();
-
-        MethodSpec toPredicateMethod = MethodSpec.methodBuilder("toPredicate")
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(beanClass, StringUtil.firstLetterLowerCase(codeModel.getBeanName()))
-                .addCode(" return ($T<" + codeModel.getBeanName() + ">) (root, criteriaQuery, criteriaBuilder) -> {\n" +
-                        "     $T<$T> predicate = new $T<>();\n" +
-                        "     if ($T.isNotBlank(" + StringUtil.firstLetterLowerCase(codeModel.getBeanName()) + ".getId())) {\n" +
-                        "         predicate.add(criteriaBuilder.equal(root.get(\"id\"), " + StringUtil.firstLetterLowerCase(codeModel.getBeanName()) + ".getId()));\n" +
-                        "     }\n" +
-                        "     return criteriaQuery.where(predicate.toArray(new Predicate[predicate.size()])).getRestriction();\n" +
-                        " };\n", Specification.class, List.class, Predicate.class, ArrayList.class, org.apache.commons.lang3.StringUtils.class)
-                .returns(Specification.class)
-                .build();
-
-        MethodSpec pageListMethod = MethodSpec.methodBuilder("pageList")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(beanClass, codeModel.getBeanName().toLowerCase())
-                .addParameter(int.class, "page")
-                .addParameter(int.class, "pageSize")
-                .addCode("  $T sort = Sort.by(Sort.Direction.DESC, \"id\");\n" +
-                                "  $T pageable = $T.of(page, pageSize, sort);\n" +
-                                "  return " + repositoryName + ".pageList(pageable, toPredicate(" + codeModel.getBeanName().toLowerCase() + "));\n",
-                        Sort.class, Pageable.class, PageRequest.class)
-                .returns(Page.class)
-                .build();
 
         TypeSpec typeSpec = TypeSpec.classBuilder(codeModel.getServerImplName())
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
                 .addAnnotation(Service.class)
                 .addAnnotation(Transactional.class)
-                .addSuperinterface(className)
+                .addSuperinterface(parameterizedTypeName)
                 .addField(fieldSpec)
-                .addMethod(saveMethod)
-                .addMethod(getMethod)
-                .addMethod(deleteMethod)
-                .addMethod(toPredicateMethod)
-                .addMethod(pageListMethod)
+                .addMethod(repoMethod)
                 .build();
 
         JavaFile javaFile = JavaFile.builder(serviceImplPackage, typeSpec).build();
@@ -398,24 +324,29 @@ public class JavaCreate implements CreateCode {
         String serverName = StringUtil.firstLetterLowerCase(codeModel.getServerName());
         String domainName = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
 
+        AnnotationSpec rootmapping = AnnotationSpec
+                .builder(RequestMapping.class)
+                .addMember("value", "$S", "/" + domainName)
+                .build();
+        
         AnnotationSpec saveAnnotation = AnnotationSpec
                 .builder(PostMapping.class)
-                .addMember("value", "$S", "/" + domainName + "/add")
+                .addMember("value", "$S", "/save")
                 .build();
 
         AnnotationSpec deleteAnnotation = AnnotationSpec
                 .builder(PostMapping.class)
-                .addMember("value", "$S", "/" + domainName + "/delByids")
+                .addMember("value", "$S", "/delete")
                 .build();
 
         AnnotationSpec infoAnnotation = AnnotationSpec
                 .builder(PostMapping.class)
-                .addMember("value", "$S", "/" + domainName + "/info/{id}")
+                .addMember("value", "$S", "/get/{id}")
                 .build();
 
         AnnotationSpec pageListAnnotation = AnnotationSpec
                 .builder(PostMapping.class)
-                .addMember("value", "$S", "/" + domainName + "/pageList")
+                .addMember("value", "$S", "/list")
                 .build();
 
         FieldSpec fieldSpec = FieldSpec.builder(serverClassName, serverName, Modifier.PUBLIC)
@@ -426,7 +357,7 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(PathVariable.class)
                 .build();
 
-        MethodSpec saveMethod = MethodSpec.methodBuilder("add")
+        MethodSpec saveMethod = MethodSpec.methodBuilder("save")
                 .addAnnotation(saveAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(domainClassName, domainName)
@@ -434,7 +365,7 @@ public class JavaCreate implements CreateCode {
                 .returns(saveReturnClass)
                 .build();
 
-        MethodSpec deleteMethod = MethodSpec.methodBuilder("delByids")
+        MethodSpec deleteMethod = MethodSpec.methodBuilder("delete")
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(deleteAnnotation)
                 .addParameter(String.class, "ids")
@@ -442,7 +373,7 @@ public class JavaCreate implements CreateCode {
                 .returns(saveReturnClass)
                 .build();
 
-        MethodSpec infoMethod = MethodSpec.methodBuilder("info")
+        MethodSpec infoMethod = MethodSpec.methodBuilder("get")
                 .addAnnotation(infoAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(infoParm)
@@ -450,7 +381,7 @@ public class JavaCreate implements CreateCode {
                 .returns(saveReturnClass)
                 .build();
 
-        MethodSpec pageListMethod = MethodSpec.methodBuilder("pageListMethod")
+        MethodSpec pageListMethod = MethodSpec.methodBuilder("list")
                 .addAnnotation(pageListAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(domainClassName, domainName)
@@ -464,6 +395,7 @@ public class JavaCreate implements CreateCode {
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
                 .addAnnotation(RestController.class)
+                .addAnnotation(rootmapping)
                 .addField(fieldSpec)
                 .addMethod(saveMethod)
                 .addMethod(deleteMethod)

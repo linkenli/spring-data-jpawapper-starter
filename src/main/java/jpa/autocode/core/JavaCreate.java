@@ -1,33 +1,18 @@
 package jpa.autocode.core;
 
-import com.squareup.javapoet.*;
-import jpa.autocode.bean.CodeModel;
-import jpa.autocode.bean.Parms;
-import jpa.autocode.bean.Table;
-import jpa.autocode.util.DateUtils;
-import jpa.autocode.util.ParmsUtil;
-import jpa.autocode.util.StringUtil;
-import jpa.autocode.util.UUIDUtils;
-import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Repository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.PropertyResourceBundle;
+import java.util.ResourceBundle;
+import java.util.Set;
 
 import javax.lang.model.element.Modifier;
 import javax.persistence.Column;
@@ -35,13 +20,35 @@ import javax.persistence.EntityManager;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.criteria.Predicate;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.*;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeSpec;
+
+import jpa.autocode.bean.CodeModel;
+import jpa.autocode.bean.Parms;
+import jpa.autocode.bean.Table;
+import jpa.autocode.util.DateUtils;
+import jpa.autocode.util.ParmsUtil;
+import jpa.autocode.util.StringUtil;
+import lombok.Data;
 
 @Data
 public class JavaCreate implements CreateCode {
@@ -153,7 +160,7 @@ public class JavaCreate implements CreateCode {
         }
     }
 
-    public boolean createDomainClass(String tableName, List<Table> tableList) {
+    public boolean createDomainClass(String tableName, List<Table> tableList) throws ClassNotFoundException {
         /** 读取mysql转Java类型配置 **/
         InputStream in = null;
         if ("mysql".equals(dataBaseType)) {
@@ -169,10 +176,17 @@ public class JavaCreate implements CreateCode {
         }
 
         
+        String baseEntity = doMainPackage + ".BaseEntity";
+        Class<?> clz = Class.forName(baseEntity);
+        Set<String> allFields = getAllFields(clz);
+        
         TypeSpec.Builder builder = TypeSpec.classBuilder(codeModel.getBeanName());
         ResourceBundle finalResourceBundle = resourceBundle;
         tableList.forEach(t -> {
         	
+        	if (clz == null || allFields.contains(getCamelName(t.getName()))) {
+        		return;
+        	}
         	List<AnnotationSpec> list = new ArrayList<AnnotationSpec>();
         	
             /** 属性上面的注解 **/
@@ -234,7 +248,7 @@ public class JavaCreate implements CreateCode {
         TypeSpec typeSpec = builder
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(annotationSpecData)
-//                .superclass(ClassName.bestGuess("com.disney.wdpro.wechat.model.BaseEntity"))
+                .superclass(ClassName.bestGuess(baseEntity))
                 .addAnnotation(annotationSpecEntity)
                 .addAnnotation(annotationSpecTable)
                 .addJavadoc(" @Author: Linken Li\n" +
@@ -247,6 +261,16 @@ public class JavaCreate implements CreateCode {
         outFile(javaFile);
         return true;
     }
+
+	private Set<String> getAllFields(Class<?> clz) {
+		Field[] declaredFields = clz.getDeclaredFields();
+        Set<String> set = new HashSet<String>();
+        for (Field f : declaredFields) {
+        	set.add(f.getName());
+        }
+        
+        return set;
+	}
 
     private void createRepository() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
         ClassName superClass = ClassName.bestGuess(repositoryPackage + ".BaseDao");

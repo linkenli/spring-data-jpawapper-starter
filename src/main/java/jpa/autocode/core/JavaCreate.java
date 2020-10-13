@@ -186,10 +186,19 @@ public class JavaCreate implements CreateCode {
                 list.add(annotationSpecColumn);
                 AnnotationSpec.builder(GenerationType.class).build();
             } else {
-            	annotationSpecColumn = AnnotationSpec.builder(Column.class)
-                        .addMember("name", "$S", t.getName().toLowerCase())
-                        .build();
-            	list.add(annotationSpecColumn);
+            	if (",created_time,updated_time,".contains("," + t.getName().toLowerCase() + ",")) {
+            		annotationSpecColumn = AnnotationSpec.builder(Column.class)
+	                        .addMember("name", "$S", t.getName().toLowerCase())
+	                        .addMember("insertable", "$L", false)
+	                        .addMember("updatable", "$L", false)
+	                        .build();
+	            	list.add(annotationSpecColumn);
+            	} else {
+	            	annotationSpecColumn = AnnotationSpec.builder(Column.class)
+	                        .addMember("name", "$S", t.getName().toLowerCase())
+	                        .build();
+	            	list.add(annotationSpecColumn);
+            	}
             }
 
             Class clazz = String.class;

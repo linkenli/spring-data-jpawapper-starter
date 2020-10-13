@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -335,13 +336,17 @@ public class JavaCreate implements CreateCode {
         LOGGER.info("serviceImpl create success！");
     }
 
-    private void createController() throws ClassNotFoundException {
+    private void createController() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
         ClassName serverClassName = ClassName.bestGuess(servicePackage + "." + codeModel.getServerName());
         ClassName domainClassName = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());
         Class saveReturnClass = Class.forName("com.disney.wdpro.wechat.dto.RR");
 
         String serverName = StringUtil.firstLetterLowerCase(codeModel.getServerName());
         String domainName = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
+        
+        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        String name = beanClz.getDeclaredField("id").getType().getName();
+        ClassName paramClz = ClassName.bestGuess(name);// 泛型第二个参数
 
         AnnotationSpec rootmapping = AnnotationSpec
                 .builder(RequestMapping.class)
@@ -359,12 +364,12 @@ public class JavaCreate implements CreateCode {
                 .build();
 
         AnnotationSpec infoAnnotation = AnnotationSpec
-                .builder(PostMapping.class)
+                .builder(GetMapping.class)
                 .addMember("value", "$S", "/get/{id}")
                 .build();
 
         AnnotationSpec pageListAnnotation = AnnotationSpec
-                .builder(PostMapping.class)
+                .builder(GetMapping.class)
                 .addMember("value", "$S", "/list")
                 .build();
 
@@ -372,7 +377,7 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(Autowired.class)
                 .build();
 
-        ParameterSpec infoParm = ParameterSpec.builder(String.class, "id")
+        ParameterSpec infoParm = ParameterSpec.builder(paramClz, "id")
                 .addAnnotation(PathVariable.class)
                 .build();
 
@@ -407,7 +412,7 @@ public class JavaCreate implements CreateCode {
                 .addParameter(int.class, "page")
                 .addParameter(int.class, "pageSize")
                 .addCode("return null;\n")
-                .returns(Page.class)
+                .returns(saveReturnClass)
                 .build();
 
         TypeSpec className = TypeSpec.classBuilder(codeModel.getControllerName())

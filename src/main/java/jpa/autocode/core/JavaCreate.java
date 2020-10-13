@@ -249,7 +249,7 @@ public class JavaCreate implements CreateCode {
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(parameterizedTypeName)
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
-                .addAnnotation(Repository.class)
+//                .addAnnotation(Repository.class)
                 .build();
 
         JavaFile javaFile = JavaFile.builder(repositoryPackage, typeSpec).build();

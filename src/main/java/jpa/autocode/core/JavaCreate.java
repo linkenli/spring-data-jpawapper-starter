@@ -119,12 +119,12 @@ public class JavaCreate implements CreateCode {
         // 生成代码
         try {
             this.newThreadCreateCode(tableName, tableList);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    void newThreadCreateCode(String tableName, List<Table> tableList) throws InterruptedException {
+    void newThreadCreateCode(String tableName, List<Table> tableList) throws InterruptedException, ClassNotFoundException, NoSuchFieldException, SecurityException {
         // 生成domain
         this.createDomainClass(tableName, tableList);
         Thread.sleep(1000);
@@ -238,11 +238,13 @@ public class JavaCreate implements CreateCode {
         return true;
     }
 
-    private void createRepository() {
+    private void createRepository() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
         ClassName superClass = ClassName.bestGuess(repositoryPackage + ".BaseDao");
 
         ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
-        ClassName paramTwo = ClassName.bestGuess("java.lang.Long");// 泛型第二个参数
+        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        String name = beanClz.getDeclaredField("id").getType().getName();
+        ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
 
         TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getRepositoryName())
@@ -257,16 +259,22 @@ public class JavaCreate implements CreateCode {
         LOGGER.info("repository create success！");
     }
 
-    public boolean createServiceClass() {
+    public boolean createServiceClass() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
         ClassName beanClass = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());
 
+        ClassName superClass = ClassName.bestGuess(servicePackage + ".IService");
+        
+        ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
+        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        String name = beanClz.getDeclaredField("id").getType().getName();
+        ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
+        
+        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
 
         TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getServerName())
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
-                .addSuperinterface(ClassName.bestGuess(servicePackage + ".IService"))
-                .addTypeVariable(TypeVariableName.get("T"))
-                .addTypeVariable(TypeVariableName.get("ID"))
+                .addSuperinterface(parameterizedTypeName)
                 .build();
 
         JavaFile javaFile = JavaFile.builder(servicePackage, typeSpec).build();
@@ -275,12 +283,14 @@ public class JavaCreate implements CreateCode {
         return true;
     }
 
-    private void createServiceClassImpl() {
+    private void createServiceClassImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
         ClassName repositoryClass = ClassName.bestGuess(repositoryPackage + "." + codeModel.getRepositoryName());
         ClassName superClass = ClassName.bestGuess(servicePackage + "." + codeModel.getServerName());
 
         ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
-        ClassName paramTwo = ClassName.bestGuess("java.lang.Long");// 泛型第二个参数
+        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        String name = beanClz.getDeclaredField("id").getType().getName();
+        ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
         
         FieldSpec fieldSpec = FieldSpec.builder(repositoryClass, StringUtil.firstLetterLowerCase(codeModel.getRepositoryName()), Modifier.PRIVATE)
@@ -306,7 +316,7 @@ public class JavaCreate implements CreateCode {
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
                 .addAnnotation(Service.class)
                 .addAnnotation(Transactional.class)
-                .addSuperinterface(parameterizedTypeName)
+                .addSuperinterface(superClass)
                 .addField(fieldSpec)
                 .addMethod(repoMethod)
                 .build();
@@ -316,10 +326,10 @@ public class JavaCreate implements CreateCode {
         LOGGER.info("serviceImpl create success！");
     }
 
-    private void createController() {
+    private void createController() throws ClassNotFoundException {
         ClassName serverClassName = ClassName.bestGuess(servicePackage + "." + codeModel.getServerName());
         ClassName domainClassName = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());
-        Class saveReturnClass = ResponseEntity.class;
+        Class saveReturnClass = Class.forName("com.disney.wdpro.wechat.dto.RR");
 
         String serverName = StringUtil.firstLetterLowerCase(codeModel.getServerName());
         String domainName = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
@@ -361,7 +371,7 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(saveAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(domainClassName, domainName)
-                .addCode("return ResponseEntity.ok(" + serverName + ".saveOrUpdate(" + domainName + "));\n")
+                .addCode("return null;\n")
                 .returns(saveReturnClass)
                 .build();
 
@@ -369,7 +379,7 @@ public class JavaCreate implements CreateCode {
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(deleteAnnotation)
                 .addParameter(String.class, "ids")
-                .addCode("return ResponseEntity.ok(" + serverName + ".delete" + codeModel.getBeanName() + "ByIds(ids));\n")
+                .addCode("return null;\n")
                 .returns(saveReturnClass)
                 .build();
 
@@ -377,7 +387,7 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(infoAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(infoParm)
-                .addCode("return ResponseEntity.ok(" + serverName + ".get" + codeModel.getBeanName() + "ById(id));\n")
+                .addCode("return null;\n")
                 .returns(saveReturnClass)
                 .build();
 
@@ -387,7 +397,7 @@ public class JavaCreate implements CreateCode {
                 .addParameter(domainClassName, domainName)
                 .addParameter(int.class, "page")
                 .addParameter(int.class, "pageSize")
-                .addCode("return " + serverName + ".pageList(" + domainName + ", page, pageSize);\n")
+                .addCode("return null;\n")
                 .returns(Page.class)
                 .build();
 

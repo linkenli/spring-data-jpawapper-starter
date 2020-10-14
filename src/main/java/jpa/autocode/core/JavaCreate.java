@@ -273,7 +273,7 @@ public class JavaCreate implements CreateCode {
 	}
 
     private void createRepository() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
-        ClassName superClass = ClassName.bestGuess(repositoryPackage + ".BaseDao");
+        ClassName superClass = ClassName.bestGuess(repositoryPackage + ".BaseRepository");
 
         ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
         Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
@@ -331,8 +331,8 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(Autowired.class)
                 .build();
 
-        ClassName baseDao = ClassName.bestGuess(repositoryPackage + ".BaseDao");
-        ParameterizedTypeName returnTypeName =ParameterizedTypeName.get(baseDao, paramOne, paramTwo);
+        ClassName baseRepository = ClassName.bestGuess(repositoryPackage + ".BaseRepository");
+        ParameterizedTypeName returnTypeName =ParameterizedTypeName.get(baseRepository, paramOne, paramTwo);
         		
         MethodSpec repoMethod = MethodSpec.methodBuilder("getDao")
                 .addAnnotation(Override.class)

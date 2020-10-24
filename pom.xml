@@ -2,11 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -14,18 +9,37 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
+	<developers>
+        <developer>
+            <name>Linken Li</name>
+            <email>28776757@qq.com</email>
+            <organization>Linken</organization>
+        </developer>
+    </developers>
+    
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.linken</groupId>
+    <groupId>com.gitee.linken</groupId>
     <artifactId>spring-data-jpawapper-starter</artifactId>
     <description>封装spring data jpa支持hql、sql查询，代码生成功能,基于LiuBingXu18的spring-data-jpawapper上修改</description>
-    <version>1.0.9</version>
+    <version>1.1.2</version>
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
+        <spring.boot.version>2.1.4.RELEASE</spring.boot.version>
     </properties>
-
+    
+	<distributionManagement>
+	    <repository>
+	        <id>rdc-releases</id>
+	        <url>https://repo.rdc.aliyun.com/repository/135443-release-DWu181/</url>
+	    </repository>
+	    <snapshotRepository>
+	        <id>rdc-snapshots</id>
+	        <url>https://repo.rdc.aliyun.com/repository/135443-snapshot-fcMffX/</url>
+	    </snapshotRepository>
+	</distributionManagement>
+    
     <dependencies>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -83,6 +97,17 @@
             <artifactId>spring-boot-starter-web</artifactId>
             <version>2.1.1.RELEASE</version>
         </dependency>
+        <dependency>
+	      	<groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-autoconfigure</artifactId>
+		    <version>${spring.boot.version}</version>
+		</dependency>
+	    <dependency>
+	      <groupId>org.springframework.boot</groupId>
+	      <artifactId>spring-boot-configuration-processor</artifactId>
+	      <version>${spring.boot.version}</version>
+	      <optional>true</optional>
+	    </dependency>
     </dependencies>
     <build>
         <plugins>

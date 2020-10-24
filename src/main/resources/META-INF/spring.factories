@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=jpa.AutoStarterConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=jpa.JpaGenAutoStarterConfiguration

@@ -42,6 +42,7 @@ import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 
+import jpa.JpaGenProperties;
 import jpa.autocode.bean.CodeModel;
 import jpa.autocode.bean.Parms;
 import jpa.autocode.bean.Table;
@@ -49,60 +50,38 @@ import jpa.autocode.util.DateUtils;
 import jpa.autocode.util.ParmsUtil;
 import jpa.autocode.util.StringUtil;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Data
+@Service("javaCreate")
 public class JavaCreate implements CreateCode {
     private final static Logger LOGGER = LoggerFactory.getLogger(JavaCreate.class);
 
+    @Autowired
+	private JpaGenProperties jpaGenProperties;
+    
     private EntityManager entityManager;
-    protected String dataBaseName;
     protected CodeModel codeModel = new CodeModel();
     protected String tableName;// 表名
     protected String version = "V 1.0.5";// 版本
-    protected String doMainPackage = "com.liubx.bean";// 实体类路径
-    protected String servicePackage = "com.liubx.web.service";// service路径
-    protected String serviceImplPackage = "com.liubx.web.service.impl";// service实现类路径
-    protected String repositoryPackage = "com.liubx.web.repository";// repository类路径
-    protected String controllerPackage = "com.liubx.web.controller";// controller类路径
-    protected String dataBaseType;// 数据库类型
     protected String basePath;// 绝对路径前缀
     protected List<Parms> parm;// 参数
     protected List<String> createInstance;// 创建实例
 
-    public JavaCreate(EntityManager entityManager, String dataBaseName, String tableName, String doMainPackage,
-                      String servicePackage, String serviceImplPackage, String repositoryPackage, String controllerPackage,
-                      String dataBaseType, List<Parms> parm) {
-        Assert.notNull(dataBaseName, "数据库名不能为空！");
-        Assert.notNull(tableName, "表不能为空！");
-        Assert.notNull(doMainPackage, "实体类路径不能为空！");
-        Assert.notNull(servicePackage, "service 路径不能为空！");
-        Assert.notNull(serviceImplPackage, "service 实现类路径不能为空！");
-        Assert.notNull(repositoryPackage, "repository 包路径不能为空！");
-        Assert.notNull(controllerPackage, "controller 包路径不能为空！");
-        Assert.notNull(dataBaseType, "数据库类型不能为空！");
+    @Override
+    public void create(EntityManager entityManager, String tableName, List<Parms> parm) {
+    	LOGGER.info("tableName={}", tableName);
+    	LOGGER.info("parm={}", parm);
+    	
+        checkProperties(tableName);
+        
         this.entityManager = entityManager;
-        this.dataBaseName = dataBaseName;
         this.tableName = tableName;
-        this.doMainPackage = doMainPackage;
-        this.servicePackage = servicePackage;
-        this.serviceImplPackage = serviceImplPackage;
-        this.repositoryPackage = repositoryPackage;
-        this.controllerPackage = controllerPackage;
-        this.dataBaseType = dataBaseType;
         this.parm = parm;
         this.createInstance = ParmsUtil.getValueByKey(this.parm, "type_c");
+        
         this.initBasePath();
-    }
-
-    public JavaCreate(EntityManager entityManager, String tableName, String dataBaseName) {
-        this.entityManager = entityManager;
-        this.tableName = tableName;
-        this.dataBaseName = dataBaseName;
-        this.initBasePath();
-    }
-
-    @Override
-    public void create() {
+        
         String sql = this.getSql();
         List<Object[]> resultList = entityManager.createNativeQuery(sql).getResultList();
 
@@ -131,6 +110,17 @@ public class JavaCreate implements CreateCode {
             e.printStackTrace();
         }
     }
+
+	private void checkProperties(String tableName) {
+		Assert.notNull(jpaGenProperties.getDatabaseName(), "数据库名不能为空！");
+        Assert.notNull(jpaGenProperties.getDatabaseType(), "数据库类型不能为空！");
+        Assert.notNull(tableName, "表不能为空！");
+        Assert.notNull(jpaGenProperties.getBeanPackage(), "实体类路径不能为空！");
+        Assert.notNull(jpaGenProperties.getServicePackage(), "service 路径不能为空！");
+        Assert.notNull(jpaGenProperties.getServiceImplPackage(), "service 实现类路径不能为空！");
+        Assert.notNull(jpaGenProperties.getRepositoryPackage(), "repository 包路径不能为空！");
+        Assert.notNull(jpaGenProperties.getControllerPackage(), "controller 包路径不能为空！");
+	}
 
     void newThreadCreateCode(String tableName, List<Table> tableList) throws InterruptedException, ClassNotFoundException, NoSuchFieldException, SecurityException {
         // 生成domain
@@ -163,7 +153,7 @@ public class JavaCreate implements CreateCode {
     public boolean createDomainClass(String tableName, List<Table> tableList) throws ClassNotFoundException {
         /** 读取mysql转Java类型配置 **/
         InputStream in = null;
-        if ("mysql".equals(dataBaseType)) {
+        if ("mysql".equals(jpaGenProperties.getDatabaseType())) {
             in = this.getClass().getClassLoader().getResourceAsStream("mysqlToJava.properties");
         } else {
             in = this.getClass().getClassLoader().getResourceAsStream("oracleToJava.properties");
@@ -176,7 +166,7 @@ public class JavaCreate implements CreateCode {
         }
 
         
-        String baseEntity = doMainPackage + ".BaseEntity";
+        String baseEntity = jpaGenProperties.getBeanPackage() + ".BaseEntity";
         Class<?> clz = Class.forName(baseEntity);
         Set<String> allFields = getAllFields(clz);
         
@@ -256,7 +246,7 @@ public class JavaCreate implements CreateCode {
                         " @Date: " + DateUtils.formateDate("yyyy/MM/dd") + ".\n" +
                         " @Modified by\n")
                 .build();
-        JavaFile javaFile = JavaFile.builder(doMainPackage, typeSpec).build();
+        JavaFile javaFile = JavaFile.builder(jpaGenProperties.getBeanPackage(), typeSpec).build();
 
         outFile(javaFile);
         return true;
@@ -273,10 +263,10 @@ public class JavaCreate implements CreateCode {
 	}
 
     private void createRepository() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
-        ClassName superClass = ClassName.bestGuess(repositoryPackage + ".BaseRepository");
+        ClassName superClass = ClassName.bestGuess(jpaGenProperties.getRepositoryPackage() + ".BaseRepository");
 
-        ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
-        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
+        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
         String name = beanClz.getDeclaredField("id").getType().getName();
         ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
@@ -288,18 +278,18 @@ public class JavaCreate implements CreateCode {
 //                .addAnnotation(Repository.class)
                 .build();
 
-        JavaFile javaFile = JavaFile.builder(repositoryPackage, typeSpec).build();
+        JavaFile javaFile = JavaFile.builder(jpaGenProperties.getRepositoryPackage(), typeSpec).build();
         outFile(javaFile);
         LOGGER.info("repository create success！");
     }
 
     public boolean createServiceClass() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
-        ClassName beanClass = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());
+        ClassName beanClass = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
 
-        ClassName superClass = ClassName.bestGuess(servicePackage + ".IService");
+        ClassName superClass = ClassName.bestGuess(jpaGenProperties.getServicePackage() + ".IService");
         
-        ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
-        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
+        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
         String name = beanClz.getDeclaredField("id").getType().getName();
         ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
         
@@ -311,18 +301,18 @@ public class JavaCreate implements CreateCode {
                 .addSuperinterface(parameterizedTypeName)
                 .build();
 
-        JavaFile javaFile = JavaFile.builder(servicePackage, typeSpec).build();
+        JavaFile javaFile = JavaFile.builder(jpaGenProperties.getServicePackage(), typeSpec).build();
         outFile(javaFile);
         LOGGER.info("service create success！");
         return true;
     }
 
     private void createServiceClassImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
-        ClassName repositoryClass = ClassName.bestGuess(repositoryPackage + "." + codeModel.getRepositoryName());
-        ClassName superClass = ClassName.bestGuess(servicePackage + "." + codeModel.getServerName());
+        ClassName repositoryClass = ClassName.bestGuess(jpaGenProperties.getRepositoryPackage() + "." + codeModel.getRepositoryName());
+        ClassName superClass = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServerName());
 
-        ClassName paramOne = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());// 泛型第一个参数
-        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
+        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
         String name = beanClz.getDeclaredField("id").getType().getName();
         ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
@@ -331,7 +321,7 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(Autowired.class)
                 .build();
 
-        ClassName baseRepository = ClassName.bestGuess(repositoryPackage + ".BaseRepository");
+        ClassName baseRepository = ClassName.bestGuess(jpaGenProperties.getRepositoryPackage() + ".BaseRepository");
         ParameterizedTypeName returnTypeName =ParameterizedTypeName.get(baseRepository, paramOne, paramTwo);
         		
         MethodSpec repoMethod = MethodSpec.methodBuilder("getDao")
@@ -355,20 +345,20 @@ public class JavaCreate implements CreateCode {
                 .addMethod(repoMethod)
                 .build();
 
-        JavaFile javaFile = JavaFile.builder(serviceImplPackage, typeSpec).build();
+        JavaFile javaFile = JavaFile.builder(jpaGenProperties.getServiceImplPackage(), typeSpec).build();
         outFile(javaFile);
         LOGGER.info("serviceImpl create success！");
     }
 
     private void createController() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
-        ClassName serverClassName = ClassName.bestGuess(servicePackage + "." + codeModel.getServerName());
-        ClassName domainClassName = ClassName.bestGuess(doMainPackage + "." + codeModel.getBeanName());
+        ClassName serverClassName = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServerName());
+        ClassName domainClassName = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
         Class saveReturnClass = Class.forName("com.disney.wdpro.wechat.dto.RR");
 
         String serverName = StringUtil.firstLetterLowerCase(codeModel.getServerName());
         String domainName = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
         
-        Class<?> beanClz = Class.forName(doMainPackage + "." + codeModel.getBeanName());
+        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
         String name = beanClz.getDeclaredField("id").getType().getName();
         ClassName paramClz = ClassName.bestGuess(name);// 泛型第二个参数
 
@@ -451,7 +441,7 @@ public class JavaCreate implements CreateCode {
                 .addMethod(pageListMethod)
                 .build();
 
-        JavaFile javaFile = JavaFile.builder(controllerPackage, className).build();
+        JavaFile javaFile = JavaFile.builder(jpaGenProperties.getControllerPackage(), className).build();
         outFile(javaFile);
     }
 
@@ -467,10 +457,10 @@ public class JavaCreate implements CreateCode {
 
     private String getSql() {
         StringBuffer sb = new StringBuffer();
-        if ("mysql".equals(dataBaseType)) {
+        if ("mysql".equals(jpaGenProperties.getDatabaseType())) {
             sb.append("select COLUMN_NAME as name,column_comment as comment, data_type as dataType, if(column_key='PRI','true','false') from INFORMATION_SCHEMA.Columns\n" +
-                    " where table_name='" + tableName + "' and table_schema= '" + dataBaseName + "'");
-        } else if ("oracle".equals(dataBaseType)) {
+                    " where table_name='" + tableName + "' and table_schema= '" + jpaGenProperties.getDatabaseName() + "'");
+        } else if ("oracle".equals(jpaGenProperties.getDatabaseType())) {
             sb.append("select utc.column_name as 字段名,\n" +
                     "       ucc.comments 注释,\n" +
                     "       utc.data_type 数据类型,\n" +

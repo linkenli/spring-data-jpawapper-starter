@@ -490,7 +490,13 @@ public class JavaCreate implements CreateCode {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        basePath = basePath.substring(1, basePath.indexOf("/target"));
+        String os = System.getProperties().getProperty("os.name");
+        if (os.startsWith("Windows")) {
+        	basePath = basePath.substring(1, basePath.indexOf("/target"));
+        } else {
+        	basePath = "/" + basePath.substring(1, basePath.indexOf("/target"));
+        }
+        LOGGER.info("basePath={}" , basePath);
     }
 
     private String getEntityName(String tableName) {

@@ -50,7 +50,6 @@ import jpa.autocode.util.DateUtils;
 import jpa.autocode.util.ParmsUtil;
 import jpa.autocode.util.StringUtil;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 @Data
 @Service("javaCreate")

@@ -500,6 +500,9 @@ public class JavaCreate implements CreateCode {
     }
 
     private String getEntityName(String tableName) {
+        if (tableName.toLowerCase().startsWith("tb_")) {
+            tableName = tableName.substring(3);
+        }
         String[] arr = tableName.split("_");
         String entityName = "";
         for (String str : arr) {

@@ -67,6 +67,8 @@ public class JavaCreate implements CreateCode {
     protected List<Parms> parm;// 参数
     protected List<String> createInstance;// 创建实例
 
+    private Class idType;
+
     @Override
     public void create(EntityManager entityManager, String tableName, List<Parms> parm) {
     	LOGGER.info("tableName={}", tableName);
@@ -124,24 +126,24 @@ public class JavaCreate implements CreateCode {
     void newThreadCreateCode(String tableName, List<Table> tableList) throws InterruptedException, ClassNotFoundException, NoSuchFieldException, SecurityException {
         // 生成domain
         this.createDomainClass(tableName, tableList);
-        Thread.sleep(1000);
+//        Thread.sleep(1000);
 
         if (createInstance.contains("repository")) {
             // 生成repository
             this.createRepository();
-            Thread.sleep(1000);
+//            Thread.sleep(1000);
         }
        
         if (createInstance.contains("service")) {
             // 生成service接口
             this.createServiceClass();
-            Thread.sleep(1000);
+//            Thread.sleep(1000);
         }
 
         if (createInstance.contains("serviceImpl")) {
             // 生成service接口实现类
             this.createServiceClassImpl();
-            Thread.sleep(1000);
+//            Thread.sleep(1000);
         }
         if (createInstance.contains("controller")) {
             // 生成controller
@@ -200,6 +202,7 @@ public class JavaCreate implements CreateCode {
             	} else {
 	            	annotationSpecColumn = AnnotationSpec.builder(Column.class)
 	                        .addMember("name", "$S", t.getName().toLowerCase())
+                            .addMember("columnDefinition", "$S", t.getDataType())
 	                        .build();
 	            	list.add(annotationSpecColumn);
             	}
@@ -213,6 +216,9 @@ public class JavaCreate implements CreateCode {
                     clazz = Class.forName(finalResourceBundle.getString(dataType));
                     if (clazz == Date.class) {
                         // 处理日期格式化
+                    }
+                    if (t.getIsPri().equals("true")) {
+                        idType = clazz;
                     }
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
@@ -265,9 +271,8 @@ public class JavaCreate implements CreateCode {
         ClassName superClass = ClassName.bestGuess(jpaGenProperties.getRepositoryPackage() + ".BaseRepository");
 
         ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
-        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
-        String name = beanClz.getDeclaredField("id").getType().getName();
-        ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
+
+        ClassName paramTwo = ClassName.bestGuess(idType.getName());// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
 
         TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getRepositoryName())
@@ -288,9 +293,7 @@ public class JavaCreate implements CreateCode {
         ClassName superClass = ClassName.bestGuess(jpaGenProperties.getServicePackage() + ".IService");
         
         ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
-        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
-        String name = beanClz.getDeclaredField("id").getType().getName();
-        ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
+        ClassName paramTwo = ClassName.bestGuess(idType.getName());// 泛型第二个参数
         
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
 
@@ -311,9 +314,7 @@ public class JavaCreate implements CreateCode {
         ClassName superClass = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServerName());
 
         ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
-        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
-        String name = beanClz.getDeclaredField("id").getType().getName();
-        ClassName paramTwo = ClassName.bestGuess(name);// 泛型第二个参数
+        ClassName paramTwo = ClassName.bestGuess(idType.getName());// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
         
         FieldSpec fieldSpec = FieldSpec.builder(repositoryClass, StringUtil.firstLetterLowerCase(codeModel.getRepositoryName()), Modifier.PRIVATE)
@@ -350,16 +351,17 @@ public class JavaCreate implements CreateCode {
     }
 
     private void createController() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
-        ClassName serverClassName = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServerName());
+        ClassName serviceClassName = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServerName());
         ClassName domainClassName = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
-        Class saveReturnClass = Class.forName("com.disney.wdpro.wechat.dto.RR");
+        ClassName defaultReturnClass = ClassName.bestGuess("com.disney.wdpro.was.common.model.CommonReturnModel");
+        ClassName list = ClassName.get("java.util", "List");
+        ParameterizedTypeName parameterizedList = ParameterizedTypeName.get(list, domainClassName);
+//        Class saveReturnClass = Class.forName("com.disney.wdpro.wechat.dto.RR");
 
-        String serverName = StringUtil.firstLetterLowerCase(codeModel.getServerName());
+        String serviceName = StringUtil.firstLetterLowerCase(codeModel.getServerName());
         String domainName = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
         
-        Class<?> beanClz = Class.forName(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
-        String name = beanClz.getDeclaredField("id").getType().getName();
-        ClassName paramClz = ClassName.bestGuess(name);// 泛型第二个参数
+        ClassName paramClz = ClassName.bestGuess(idType.getName());// 泛型第二个参数
 
         AnnotationSpec rootmapping = AnnotationSpec
                 .builder(RequestMapping.class)
@@ -373,7 +375,7 @@ public class JavaCreate implements CreateCode {
 
         AnnotationSpec deleteAnnotation = AnnotationSpec
                 .builder(PostMapping.class)
-                .addMember("value", "$S", "/delete")
+                .addMember("value", "$S", "/delete/{id}")
                 .build();
 
         AnnotationSpec infoAnnotation = AnnotationSpec
@@ -386,7 +388,7 @@ public class JavaCreate implements CreateCode {
                 .addMember("value", "$S", "/list")
                 .build();
 
-        FieldSpec fieldSpec = FieldSpec.builder(serverClassName, serverName, Modifier.PUBLIC)
+        FieldSpec fieldSpec = FieldSpec.builder(serviceClassName, serviceName, Modifier.PRIVATE)
                 .addAnnotation(Autowired.class)
                 .build();
 
@@ -398,34 +400,32 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(saveAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(domainClassName, domainName)
-                .addCode("return null;\n")
-                .returns(saveReturnClass)
+                .addCode(String.format("\nreturn %s.save(%s);\n", serviceName, domainName))
+                .returns(domainClassName)
                 .build();
 
         MethodSpec deleteMethod = MethodSpec.methodBuilder("delete")
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(deleteAnnotation)
-                .addParameter(String.class, "ids")
-                .addCode("return null;\n")
-                .returns(saveReturnClass)
+                .addParameter(infoParm)
+                .addCode(String.format("\n %s.deleteById(id);\n return CommonReturnModel.successResponse();\n", serviceName))
+                .returns(defaultReturnClass)
                 .build();
 
         MethodSpec infoMethod = MethodSpec.methodBuilder("get")
                 .addAnnotation(infoAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(infoParm)
-                .addCode("return null;\n")
-                .returns(saveReturnClass)
+                .addCode(String.format("\nreturn %s.findById(id);\n", serviceName))
+                .returns(domainClassName)
                 .build();
 
         MethodSpec pageListMethod = MethodSpec.methodBuilder("list")
                 .addAnnotation(pageListAnnotation)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(domainClassName, domainName)
-                .addParameter(int.class, "page")
-                .addParameter(int.class, "pageSize")
-                .addCode("return null;\n")
-                .returns(saveReturnClass)
+                .addCode(String.format("\nreturn %s.findAll();\n", serviceName))
+                .returns(parameterizedList)
                 .build();
 
         TypeSpec className = TypeSpec.classBuilder(codeModel.getControllerName())

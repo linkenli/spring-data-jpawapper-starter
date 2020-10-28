@@ -46,6 +46,7 @@ public class CodeController {
         	javaCreate.create(entityManager, ParmsUtil.getValueByKey(parm, "table").get(0), parm);
         } catch (Exception e) {
             e.printStackTrace();
+            return ResponseEntity.ok("代码生成失败！");
         }
         return ResponseEntity.ok("代码生成成功！");
     }

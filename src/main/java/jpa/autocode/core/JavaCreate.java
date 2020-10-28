@@ -27,11 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
@@ -374,7 +370,7 @@ public class JavaCreate implements CreateCode {
                 .build();
 
         AnnotationSpec deleteAnnotation = AnnotationSpec
-                .builder(PostMapping.class)
+                .builder(DeleteMapping.class)
                 .addMember("value", "$S", "/delete/{id}")
                 .build();
 
@@ -384,7 +380,7 @@ public class JavaCreate implements CreateCode {
                 .build();
 
         AnnotationSpec pageListAnnotation = AnnotationSpec
-                .builder(GetMapping.class)
+                .builder(PostMapping.class)
                 .addMember("value", "$S", "/list")
                 .build();
 

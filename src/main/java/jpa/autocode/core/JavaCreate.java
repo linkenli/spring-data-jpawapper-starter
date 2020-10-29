@@ -96,8 +96,8 @@ public class JavaCreate implements CreateCode {
         // 准备相关名
         codeModel.setBeanName(getEntityName(tableName));
         codeModel.setRepositoryName(codeModel.getBeanName() + "Repository");
-        codeModel.setServerName(codeModel.getBeanName() + "Service");
-        codeModel.setServerImplName(codeModel.getServerName() + "Impl");
+        codeModel.setServiceName(codeModel.getBeanName() + "Service");
+        codeModel.setServiceImplName(codeModel.getServiceName() + "Impl");
         codeModel.setControllerName(codeModel.getBeanName() + "Controller");
 
         // 生成代码
@@ -293,7 +293,7 @@ public class JavaCreate implements CreateCode {
         
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
 
-        TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getServerName())
+        TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getServiceName())
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
                 .addSuperinterface(parameterizedTypeName)
@@ -307,7 +307,7 @@ public class JavaCreate implements CreateCode {
 
     private void createServiceClassImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
         ClassName repositoryClass = ClassName.bestGuess(jpaGenProperties.getRepositoryPackage() + "." + codeModel.getRepositoryName());
-        ClassName superClass = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServerName());
+        ClassName superClass = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServiceName());
 
         ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
         ClassName paramTwo = ClassName.bestGuess(idType.getName());// 泛型第二个参数
@@ -331,7 +331,7 @@ public class JavaCreate implements CreateCode {
         String repositoryName = StringUtil.firstLetterLowerCase(codeModel.getRepositoryName());
 
 
-        TypeSpec typeSpec = TypeSpec.classBuilder(codeModel.getServerImplName())
+        TypeSpec typeSpec = TypeSpec.classBuilder(codeModel.getServiceImplName())
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc("@Author:Linken Li\n@Date: " + DateUtils.formateDate("yyyy/MM/dd") + "\n")
                 .addAnnotation(Service.class)
@@ -347,14 +347,14 @@ public class JavaCreate implements CreateCode {
     }
 
     private void createController() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
-        ClassName serviceClassName = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServerName());
+        ClassName serviceClassName = ClassName.bestGuess(jpaGenProperties.getServicePackage() + "." + codeModel.getServiceName());
         ClassName domainClassName = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
         ClassName defaultReturnClass = ClassName.bestGuess("com.disney.wdpro.was.common.model.CommonReturnModel");
         ClassName list = ClassName.get("java.util", "List");
         ParameterizedTypeName parameterizedList = ParameterizedTypeName.get(list, domainClassName);
 //        Class saveReturnClass = Class.forName("com.disney.wdpro.wechat.dto.RR");
 
-        String serviceName = StringUtil.firstLetterLowerCase(codeModel.getServerName());
+        String serviceName = StringUtil.firstLetterLowerCase(codeModel.getServiceName());
         String domainName = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
         
         ClassName paramClz = ClassName.bestGuess(idType.getName());// 泛型第二个参数

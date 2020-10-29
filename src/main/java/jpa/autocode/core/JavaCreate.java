@@ -361,7 +361,7 @@ public class JavaCreate implements CreateCode {
 
         AnnotationSpec rootmapping = AnnotationSpec
                 .builder(RequestMapping.class)
-                .addMember("value", "$S", "/" + domainName)
+                .addMember("value", "$S", "/api/" + domainName)
                 .build();
         
         AnnotationSpec saveAnnotation = AnnotationSpec
@@ -388,14 +388,19 @@ public class JavaCreate implements CreateCode {
                 .addAnnotation(Autowired.class)
                 .build();
 
-        ParameterSpec infoParm = ParameterSpec.builder(paramClz, "id")
+        ParameterSpec idParm = ParameterSpec.builder(paramClz, "id")
                 .addAnnotation(PathVariable.class)
+                .build();
+
+
+        ParameterSpec domainParm = ParameterSpec.builder(domainClassName, domainName)
+                .addAnnotation(RequestBody.class)
                 .build();
 
         MethodSpec saveMethod = MethodSpec.methodBuilder("save")
                 .addAnnotation(saveAnnotation)
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(domainClassName, domainName)
+                .addParameter(domainParm)
                 .addCode(String.format("\nreturn %s.save(%s);\n", serviceName, domainName))
                 .returns(domainClassName)
                 .build();
@@ -403,7 +408,7 @@ public class JavaCreate implements CreateCode {
         MethodSpec deleteMethod = MethodSpec.methodBuilder("delete")
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(deleteAnnotation)
-                .addParameter(infoParm)
+                .addParameter(idParm)
                 .addCode(String.format("\n %s.deleteById(id);\n return CommonReturnModel.successResponse();\n", serviceName))
                 .returns(defaultReturnClass)
                 .build();
@@ -411,7 +416,7 @@ public class JavaCreate implements CreateCode {
         MethodSpec infoMethod = MethodSpec.methodBuilder("get")
                 .addAnnotation(infoAnnotation)
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(infoParm)
+                .addParameter(idParm)
                 .addCode(String.format("\nreturn %s.findById(id);\n", serviceName))
                 .returns(domainClassName)
                 .build();
@@ -419,7 +424,7 @@ public class JavaCreate implements CreateCode {
         MethodSpec pageListMethod = MethodSpec.methodBuilder("list")
                 .addAnnotation(pageListAnnotation)
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(domainClassName, domainName)
+                .addParameter(domainParm)
                 .addCode(String.format("\nreturn %s.findAll();\n", serviceName))
                 .returns(parameterizedList)
                 .build();

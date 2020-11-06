@@ -19,7 +19,7 @@
     
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.gitee.linken</groupId>
+    <groupId>com.github.linken</groupId>
     <artifactId>spring-data-jpawapper-starter</artifactId>
     <description>封装spring data jpa支持hql、sql查询，代码生成功能,基于LiuBingXu18的spring-data-jpawapper上修改</description>
     <version>1.1.2</version>
@@ -28,18 +28,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <spring.boot.version>2.1.4.RELEASE</spring.boot.version>
     </properties>
-    
-	<distributionManagement>
-	    <repository>
-	        <id>rdc-releases</id>
-	        <url>https://repo.rdc.aliyun.com/repository/135443-release-DWu181/</url>
-	    </repository>
-	    <snapshotRepository>
-	        <id>rdc-snapshots</id>
-	        <url>https://repo.rdc.aliyun.com/repository/135443-snapshot-fcMffX/</url>
-	    </snapshotRepository>
-	</distributionManagement>
-    
+
     <dependencies>
         <dependency>
             <groupId>com.alibaba</groupId>

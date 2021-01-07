@@ -24,26 +24,26 @@ import java.util.List;
 @RestController
 public class CodeController {
 
-	@Autowired
+    @Autowired
     private EntityManager entityManager;
-	@Autowired
-	@Qualifier("javaCreate")
-	private CreateCode javaCreate;
-	@Autowired
-	private JpaGenProperties jpaGenProperties;
+    @Autowired
+    @Qualifier("javaCreate")
+    private CreateCode javaCreate;
+    @Autowired
+    private JpaGenProperties jpaGenProperties;
 
     @PostMapping(value = "/code/create")
     public ResponseEntity createCode(String parmsList) {
-    	if (!jpaGenProperties.isEnable()) {
+        if (!jpaGenProperties.isEnable()) {
             return ResponseEntity.ok("未启用代码生成");
         }
         List<Parms> parm = JSON.parseArray(parmsList, Parms.class);
         if (ParmsUtil.getValueByKey(parm, "table").size() == 0 || ParmsUtil.getValueByKey(parm, "table").isEmpty()) {
             return ResponseEntity.ok("请选择表名，类似这样的dev_?");
         }
-        
+
         try {
-        	javaCreate.create(entityManager, ParmsUtil.getValueByKey(parm, "table").get(0), parm);
+            javaCreate.create(entityManager, ParmsUtil.getValueByKey(parm, "table").get(0), parm);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.ok("代码生成失败！");
@@ -53,9 +53,9 @@ public class CodeController {
 
     @RequestMapping("/show")
     public JpaGenProperties showProperties() {
-    	return jpaGenProperties;
+        return jpaGenProperties;
     }
-    
+
     @PostMapping(value = "/loadtable")
     public ResponseEntity loadtable() {
         if (!jpaGenProperties.isEnable()) {
@@ -63,7 +63,7 @@ public class CodeController {
         }
         StringBuffer sb = new StringBuffer();
         if ("mysql".equals(jpaGenProperties.getDatabaseType())) {
-            sb.append("select table_name from information_schema.tables where table_schema=? and table_type='base table'");
+            sb.append("select table_name from information_schema.tables where table_schema=? and lower(table_type)='base table'");
             return ResponseEntity.ok(entityManager.createNativeQuery(sb.toString())
                     .setParameter(1, jpaGenProperties.getDatabaseName()).getResultList());
         } else if ("oracle".equals(jpaGenProperties.getDatabaseType())) {

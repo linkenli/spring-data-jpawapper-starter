@@ -220,8 +220,8 @@ public class JavaCreate implements CreateCode {
                         idType = clazz;
                     }  else if (t.getColumnType().equals("tinyint(1)")) {
                         clazz = boolean.class;
-                        if (columnName.startsWith("is")) {
-                            columnName = StringUtils.substringAfter(columnName, "is");
+                        if (columnName.startsWith("is_")) {
+                            columnName = StringUtils.substringAfter(columnName, "is_");
                         }
                     }
                 } catch (ClassNotFoundException e) {

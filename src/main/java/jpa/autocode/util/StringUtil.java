@@ -3,7 +3,7 @@ package jpa.autocode.util;
 public class StringUtil {
 
     public static String objToStr(Object obj) {
-        return obj == null ? null: obj.toString();
+        return obj == null ? null : obj.toString();
     }
 
     public static String firstLetterUppercase(String str) {
@@ -19,6 +19,6 @@ public class StringUtil {
     }
 
     public static boolean isEmpty(String str) {
-    	return str == null || str.length() == 0;
+        return str == null || str.length() == 0;
     }
 }

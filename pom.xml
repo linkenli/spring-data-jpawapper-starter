@@ -20,14 +20,14 @@
         <developerConnection>scm:git:ssh://github.com/linkenli/OSSRH-61846.git</developerConnection>
         <url>https://github.com/linkenli/OSSRH-61846/tree/master</url>
     </scm>
-	<developers>
+    <developers>
         <developer>
             <name>Linken Li</name>
             <email>28776757@qq.com</email>
             <url>https://github.com/linkenli</url>
         </developer>
     </developers>
-    
+
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.linkenli</groupId>
@@ -41,20 +41,20 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-<!--        <maven.deploy.skip>true</maven.deploy.skip>-->
+        <!--        <maven.deploy.skip>true</maven.deploy.skip>-->
         <spring.boot.version>2.1.4.RELEASE</spring.boot.version>
     </properties>
 
-<!--    <distributionManagement>-->
-<!--        <snapshotRepository>-->
-<!--            <id>ossrh</id>-->
-<!--            <url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
-<!--        </snapshotRepository>-->
-<!--        <repository>-->
-<!--            <id>ossrh</id>-->
-<!--            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>-->
-<!--        </repository>-->
-<!--    </distributionManagement>-->
+    <!--    <distributionManagement>-->
+    <!--        <snapshotRepository>-->
+    <!--            <id>ossrh</id>-->
+    <!--            <url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
+    <!--        </snapshotRepository>-->
+    <!--        <repository>-->
+    <!--            <id>ossrh</id>-->
+    <!--            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>-->
+    <!--        </repository>-->
+    <!--    </distributionManagement>-->
 
     <dependencies>
         <dependency>
@@ -114,16 +114,16 @@
             <version>2.1.1.RELEASE</version>
         </dependency>
         <dependency>
-	      	<groupId>org.springframework.boot</groupId>
-		    <artifactId>spring-boot-autoconfigure</artifactId>
-		    <version>${spring.boot.version}</version>
-		</dependency>
-	    <dependency>
-	      <groupId>org.springframework.boot</groupId>
-	      <artifactId>spring-boot-configuration-processor</artifactId>
-	      <version>${spring.boot.version}</version>
-	      <optional>true</optional>
-	    </dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <version>${spring.boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <version>${spring.boot.version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -187,5 +187,5 @@
             </distributionManagement>
         </profile>
     </profiles>
-    
+
 </project>

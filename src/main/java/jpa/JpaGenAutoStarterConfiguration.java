@@ -13,5 +13,5 @@ import jpa.autocode.core.JavaCreate;
 @Import({CodeController.class, JavaCreate.class})
 public class JpaGenAutoStarterConfiguration {
 
-	
+
 }

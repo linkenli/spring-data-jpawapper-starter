@@ -53,8 +53,8 @@ public class JavaCreate implements CreateCode {
     private final static Logger LOGGER = LoggerFactory.getLogger(JavaCreate.class);
 
     @Autowired
-	private JpaGenProperties jpaGenProperties;
-    
+    private JpaGenProperties jpaGenProperties;
+
     private EntityManager entityManager;
     protected CodeModel codeModel = new CodeModel();
     protected String tableName;// 表名
@@ -67,18 +67,18 @@ public class JavaCreate implements CreateCode {
 
     @Override
     public void create(EntityManager entityManager, String tableName, List<Parms> parm) {
-    	LOGGER.info("tableName={}", tableName);
-    	LOGGER.info("parm={}", parm);
-    	
+        LOGGER.info("tableName={}", tableName);
+        LOGGER.info("parm={}", parm);
+
         checkProperties(tableName);
-        
+
         this.entityManager = entityManager;
         this.tableName = tableName;
         this.parm = parm;
         this.createInstance = ParmsUtil.getValueByKey(this.parm, "type_c");
-        
+
         this.initBasePath();
-        
+
         String sql = this.getSql();
         List<Object[]> resultList = entityManager.createNativeQuery(sql).getResultList();
 
@@ -89,7 +89,8 @@ public class JavaCreate implements CreateCode {
             table.setName(StringUtil.objToStr(t[0]));
             table.setComment(StringUtil.objToStr(t[1]));
             table.setDataType(StringUtil.objToStr(t[2]));
-            table.setIsPri(StringUtil.objToStr(t[3]));
+            table.setColumnType(StringUtil.objToStr(t[3]));
+            table.setIsPri(StringUtil.objToStr(t[4]));
             tableList.add(table);
         });
 
@@ -108,8 +109,8 @@ public class JavaCreate implements CreateCode {
         }
     }
 
-	private void checkProperties(String tableName) {
-		Assert.notNull(jpaGenProperties.getDatabaseName(), "数据库名不能为空！");
+    private void checkProperties(String tableName) {
+        Assert.notNull(jpaGenProperties.getDatabaseName(), "数据库名不能为空！");
         Assert.notNull(jpaGenProperties.getDatabaseType(), "数据库类型不能为空！");
         Assert.notNull(tableName, "表不能为空！");
         Assert.notNull(jpaGenProperties.getBeanPackage(), "实体类路径不能为空！");
@@ -117,7 +118,7 @@ public class JavaCreate implements CreateCode {
         Assert.notNull(jpaGenProperties.getServiceImplPackage(), "service 实现类路径不能为空！");
         Assert.notNull(jpaGenProperties.getRepositoryPackage(), "repository 包路径不能为空！");
         Assert.notNull(jpaGenProperties.getControllerPackage(), "controller 包路径不能为空！");
-	}
+    }
 
     void newThreadCreateCode(String tableName, List<Table> tableList) throws InterruptedException, ClassNotFoundException, NoSuchFieldException, SecurityException {
         // 生成domain
@@ -129,7 +130,7 @@ public class JavaCreate implements CreateCode {
             this.createRepository();
 //            Thread.sleep(1000);
         }
-       
+
         if (createInstance.contains("service")) {
             // 生成service接口
             this.createServiceClass();
@@ -162,46 +163,46 @@ public class JavaCreate implements CreateCode {
             e.printStackTrace();
         }
 
-        
+
         String baseEntity = jpaGenProperties.getBeanPackage() + ".BaseEntity";
         Class<?> clz = Class.forName(baseEntity);
         Set<String> allFields = getAllFields(clz);
-        
+
         TypeSpec.Builder builder = TypeSpec.classBuilder(codeModel.getBeanName());
         ResourceBundle finalResourceBundle = resourceBundle;
         tableList.forEach(t -> {
-        	
-        	if (clz == null || allFields.contains(getCamelName(t.getName()))) {
-        		return;
-        	}
-        	List<AnnotationSpec> list = new ArrayList<AnnotationSpec>();
-        	
+
+            if (clz == null || allFields.contains(getCamelName(t.getName()))) {
+                return;
+            }
+            List<AnnotationSpec> list = new ArrayList<AnnotationSpec>();
+
             /** 属性上面的注解 **/
             AnnotationSpec annotationSpecColumn;
-            
+
             if (t.getIsPri().equals("true")) {
                 annotationSpecColumn = AnnotationSpec.builder(Id.class).build();
                 list.add(annotationSpecColumn);
                 annotationSpecColumn = AnnotationSpec.builder(GeneratedValue.class)
-                		.addMember("strategy", "$T.IDENTITY", GenerationType.class)
-                		.build();
+                        .addMember("strategy", "$T.IDENTITY", GenerationType.class)
+                        .build();
                 list.add(annotationSpecColumn);
                 AnnotationSpec.builder(GenerationType.class).build();
             } else {
-            	if (",created_time,updated_time,".contains("," + t.getName().toLowerCase() + ",")) {
-            		annotationSpecColumn = AnnotationSpec.builder(Column.class)
-	                        .addMember("name", "$S", t.getName().toLowerCase())
-	                        .addMember("insertable", "$L", false)
-	                        .addMember("updatable", "$L", false)
-	                        .build();
-	            	list.add(annotationSpecColumn);
-            	} else {
-	            	annotationSpecColumn = AnnotationSpec.builder(Column.class)
-	                        .addMember("name", "$S", t.getName().toLowerCase())
+                if (",created_time,updated_time,".contains("," + t.getName().toLowerCase() + ",")) {
+                    annotationSpecColumn = AnnotationSpec.builder(Column.class)
+                            .addMember("name", "$S", t.getName().toLowerCase())
+                            .addMember("insertable", "$L", false)
+                            .addMember("updatable", "$L", false)
+                            .build();
+                    list.add(annotationSpecColumn);
+                } else {
+                    annotationSpecColumn = AnnotationSpec.builder(Column.class)
+                            .addMember("name", "$S", t.getName().toLowerCase())
                             .addMember("columnDefinition", "$S", t.getDataType())
-	                        .build();
-	            	list.add(annotationSpecColumn);
-            	}
+                            .build();
+                    list.add(annotationSpecColumn);
+                }
             }
 
             Class clazz = String.class;
@@ -215,6 +216,8 @@ public class JavaCreate implements CreateCode {
                     }
                     if (t.getIsPri().equals("true")) {
                         idType = clazz;
+                    }  else if (t.getColumnType().equals("tinyint(1)")) {
+                        clazz = boolean.class;
                     }
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
@@ -253,15 +256,15 @@ public class JavaCreate implements CreateCode {
         return true;
     }
 
-	private Set<String> getAllFields(Class<?> clz) {
-		Field[] declaredFields = clz.getDeclaredFields();
+    private Set<String> getAllFields(Class<?> clz) {
+        Field[] declaredFields = clz.getDeclaredFields();
         Set<String> set = new HashSet<String>();
         for (Field f : declaredFields) {
-        	set.add(f.getName());
+            set.add(f.getName());
         }
-        
+
         return set;
-	}
+    }
 
     private void createRepository() throws ClassNotFoundException, NoSuchFieldException, SecurityException {
         ClassName superClass = ClassName.bestGuess(jpaGenProperties.getRepositoryPackage() + ".BaseRepository");
@@ -287,10 +290,10 @@ public class JavaCreate implements CreateCode {
         ClassName beanClass = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());
 
         ClassName superClass = ClassName.bestGuess(jpaGenProperties.getServicePackage() + ".IService");
-        
+
         ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
         ClassName paramTwo = ClassName.bestGuess(idType.getName());// 泛型第二个参数
-        
+
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
 
         TypeSpec typeSpec = TypeSpec.interfaceBuilder(codeModel.getServiceName())
@@ -312,21 +315,21 @@ public class JavaCreate implements CreateCode {
         ClassName paramOne = ClassName.bestGuess(jpaGenProperties.getBeanPackage() + "." + codeModel.getBeanName());// 泛型第一个参数
         ClassName paramTwo = ClassName.bestGuess(idType.getName());// 泛型第二个参数
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(superClass, paramOne, paramTwo);
-        
+
         FieldSpec fieldSpec = FieldSpec.builder(repositoryClass, StringUtil.firstLetterLowerCase(codeModel.getRepositoryName()), Modifier.PRIVATE)
                 .addAnnotation(Autowired.class)
                 .build();
 
         ClassName baseRepository = ClassName.bestGuess(jpaGenProperties.getRepositoryPackage() + ".BaseRepository");
-        ParameterizedTypeName returnTypeName =ParameterizedTypeName.get(baseRepository, paramOne, paramTwo);
-        		
+        ParameterizedTypeName returnTypeName = ParameterizedTypeName.get(baseRepository, paramOne, paramTwo);
+
         MethodSpec repoMethod = MethodSpec.methodBuilder("getDao")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addCode("return " + StringUtil.firstLetterLowerCase(codeModel.getRepositoryName()) + ";\n")
                 .returns(returnTypeName)
                 .build();
-        
+
         String beanParm = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
         String repositoryName = StringUtil.firstLetterLowerCase(codeModel.getRepositoryName());
 
@@ -356,14 +359,14 @@ public class JavaCreate implements CreateCode {
 
         String serviceName = StringUtil.firstLetterLowerCase(codeModel.getServiceName());
         String domainName = StringUtil.firstLetterLowerCase(codeModel.getBeanName());
-        
+
         ClassName paramClz = ClassName.bestGuess(idType.getName());// 泛型第二个参数
 
         AnnotationSpec rootmapping = AnnotationSpec
                 .builder(RequestMapping.class)
                 .addMember("value", "$S", "/api/" + domainName)
                 .build();
-        
+
         AnnotationSpec saveAnnotation = AnnotationSpec
                 .builder(PostMapping.class)
                 .addMember("value", "$S", "/save")
@@ -458,18 +461,19 @@ public class JavaCreate implements CreateCode {
     private String getSql() {
         StringBuffer sb = new StringBuffer();
         if ("mysql".equals(jpaGenProperties.getDatabaseType())) {
-            sb.append("select COLUMN_NAME as name,column_comment as comment, data_type as dataType, if(column_key='PRI','true','false') from INFORMATION_SCHEMA.Columns\n" +
+            sb.append("select COLUMN_NAME as name,column_comment as comment, data_type as dataType, column_type, if(column_key='PRI','true','false') from INFORMATION_SCHEMA.Columns\n" +
                     " where table_name='" + tableName + "' and table_schema= '" + jpaGenProperties.getDatabaseName() + "'");
         } else if ("oracle".equals(jpaGenProperties.getDatabaseType())) {
             sb.append("select utc.column_name as 字段名,\n" +
                     "       ucc.comments 注释,\n" +
                     "       utc.data_type 数据类型,\n" +
+                    "       null 数据定义,\n" +
                     "       CASE UTC.COLUMN_NAME\n" +
                     "         WHEN (select col.column_name\n" +
                     "             from user_constraints con, user_cons_columns col\n" +
                     "            where con.constraint_name = col.constraint_name\n" +
                     "              and con.constraint_type = 'P'\n" +
-                    "              and col.table_name = '"+ tableName.toUpperCase() +"') THEN\n" +
+                    "              and col.table_name = '" + tableName.toUpperCase() + "') THEN\n" +
                     "          'true'\n" +
                     "         ELSE\n" +
                     "          'false'\n" +
@@ -477,7 +481,7 @@ public class JavaCreate implements CreateCode {
                     "  from user_tab_columns utc, user_col_comments ucc\n" +
                     " where utc.table_name = ucc.table_name\n" +
                     "   and utc.column_name = ucc.column_name\n" +
-                    "   and utc.table_name = '"+ tableName.toUpperCase() +"'\n" +
+                    "   and utc.table_name = '" + tableName.toUpperCase() + "'\n" +
                     " order by column_id");
         }
         return sb.toString();
@@ -492,11 +496,11 @@ public class JavaCreate implements CreateCode {
         }
         String os = System.getProperties().getProperty("os.name");
         if (os.startsWith("Windows")) {
-        	basePath = basePath.substring(1, basePath.indexOf("/target"));
+            basePath = basePath.substring(1, basePath.indexOf("/target"));
         } else {
-        	basePath = "/" + basePath.substring(1, basePath.indexOf("/target"));
+            basePath = "/" + basePath.substring(1, basePath.indexOf("/target"));
         }
-        LOGGER.info("basePath={}" , basePath);
+        LOGGER.info("basePath={}", basePath);
     }
 
     private String getEntityName(String tableName) {
@@ -511,19 +515,18 @@ public class JavaCreate implements CreateCode {
 
         return entityName;
     }
-    
+
     private String getCamelName(String columnName) {
-    	String[] arr = columnName.toLowerCase().split("_");
-    	StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < arr.length; i++) {
-			if (i == 0) {
-				sb.append(arr[i]);
-			}
-			else {
-				sb.append(StringUtil.firstLetterUppercase(arr[i]));
-			}
-		}
-		
-		return sb.toString();
+        String[] arr = columnName.toLowerCase().split("_");
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < arr.length; i++) {
+            if (i == 0) {
+                sb.append(arr[i]);
+            } else {
+                sb.append(StringUtil.firstLetterUppercase(arr[i]));
+            }
+        }
+
+        return sb.toString();
     }
 }

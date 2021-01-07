@@ -6,6 +6,7 @@ package jpa.autocode.bean;
  */
 
 import lombok.Data;
+
 @Data
 public class Parms {
     private String name;

@@ -25,43 +25,43 @@ import java.util.List;
 @Service
 @Transactional
 public class UserServerImpl implements UserServer {
-  @Autowired
-  private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-  @Override
-  public User saveOrUpdate(User user) {
-      if (StringUtils.isEmpty(user.getId())) {
-      user.setId(UUIDUtils.getUUID());
-      }
-    return userRepository.save(user);
-  }
+    @Override
+    public User saveOrUpdate(User user) {
+        if (StringUtils.isEmpty(user.getId())) {
+            user.setId(UUIDUtils.getUUID());
+        }
+        return userRepository.save(user);
+    }
 
-  @Override
-  public User getUserById(String id) {
-      return userRepository.findById(id ).get();
-  }
+    @Override
+    public User getUserById(String id) {
+        return userRepository.findById(id).get();
+    }
 
-  @Override
-  public boolean deleteUserByIds(String ids) {
-      String[] idArr = ids.split(",");
-      userRepository.batchDelete(Arrays.asList(idArr));
-      return true;
-  }
+    @Override
+    public boolean deleteUserByIds(String ids) {
+        String[] idArr = ids.split(",");
+        userRepository.batchDelete(Arrays.asList(idArr));
+        return true;
+    }
 
-  public Specification toPredicate(User user) {
-     return (Specification<User>) (root, criteriaQuery, criteriaBuilder) -> {
-         List<Predicate> predicate = new ArrayList<>();
-         if (org.apache.commons.lang3.StringUtils.isNotBlank(user.getId())) {
-             predicate.add(criteriaBuilder.equal(root.get("id"), user.getId()));
-         }
-         return criteriaQuery.where(predicate.toArray(new Predicate[predicate.size()])).getRestriction();
-     };
-  }
+    public Specification toPredicate(User user) {
+        return (Specification<User>) (root, criteriaQuery, criteriaBuilder) -> {
+            List<Predicate> predicate = new ArrayList<>();
+            if (org.apache.commons.lang3.StringUtils.isNotBlank(user.getId())) {
+                predicate.add(criteriaBuilder.equal(root.get("id"), user.getId()));
+            }
+            return criteriaQuery.where(predicate.toArray(new Predicate[predicate.size()])).getRestriction();
+        };
+    }
 
-  @Override
-  public Page pageList(User user, int page, int pageSize) {
-      Sort sort = Sort.by(Sort.Direction.DESC, "id");
-      Pageable pageable = PageRequest.of(page, pageSize, sort);
-      return userRepository.pageList(pageable, toPredicate(user));
-  }
+    @Override
+    public Page pageList(User user, int page, int pageSize) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        Pageable pageable = PageRequest.of(page, pageSize, sort);
+        return userRepository.pageList(pageable, toPredicate(user));
+    }
 }

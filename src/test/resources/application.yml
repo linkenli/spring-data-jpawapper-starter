@@ -13,21 +13,21 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
 
 code-create:
-#需要生成代码的数据库
+  #需要生成代码的数据库
   database-name: toolkit
-#生成bean的包
+  #生成bean的包
   bean-package: com.liubx.bean
-#生成service的包
+  #生成service的包
   service-package: com.liubx.web.service
-#生成serviceImpl的包
+  #生成serviceImpl的包
   service-impl-package: com.liubx.web.service.impl
-#生成repository的包
+  #生成repository的包
   repository-package: com.liubx.web.repoDsitory
-#生成controller的包
+  #生成controller的包
   controller-package: com.liubx.web.controller
-#是否生成代码
+  #是否生成代码
   enable: true
-#数据库类型 mysql或者oracle
+  #数据库类型 mysql或者oracle
   database-type: mysql
 
 

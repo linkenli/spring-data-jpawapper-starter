@@ -21,6 +21,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -205,6 +206,7 @@ public class JavaCreate implements CreateCode {
                 }
             }
 
+            String columnName = t.getName();
             Class clazz = String.class;
             if (finalResourceBundle != null) {
                 try {
@@ -218,19 +220,25 @@ public class JavaCreate implements CreateCode {
                         idType = clazz;
                     }  else if (t.getColumnType().equals("tinyint(1)")) {
                         clazz = boolean.class;
+                        if (columnName.startsWith("is")) {
+                            columnName = StringUtils.substringAfter(columnName, "is");
+                        }
                     }
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
             }
+
+            String fieldName = getCamelName(columnName);
             /** 添加属性 **/
-            FieldSpec fieldSpec = FieldSpec.builder(clazz, getCamelName(t.getName()), Modifier.PRIVATE)
+            FieldSpec fieldSpec = FieldSpec.builder(clazz, fieldName, Modifier.PRIVATE)
                     .addJavadoc(t.getComment())// 字段注释
                     .addAnnotations(list)
                     .build();
             builder.addField(fieldSpec);
             LOGGER.info("bean生成成功！");
         });
+
 
         /** 生成注解 **/
         AnnotationSpec annotationSpecTable = AnnotationSpec.builder(javax.persistence.Table.class)

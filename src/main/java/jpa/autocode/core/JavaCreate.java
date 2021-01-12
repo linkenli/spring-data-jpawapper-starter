@@ -204,6 +204,17 @@ public class JavaCreate implements CreateCode {
                             .build();
                     list.add(annotationSpecColumn);
                 }
+
+                if (t.getDataType().toLowerCase().equals("json")) {
+                    try {
+                        annotationSpecColumn = AnnotationSpec.builder(Class.forName(""))
+                                .addMember("name", "$S", "json")
+                                .build();
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                    list.add(annotationSpecColumn);
+                }
             }
 
             String columnName = t.getName();

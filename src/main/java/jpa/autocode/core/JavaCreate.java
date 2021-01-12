@@ -207,8 +207,8 @@ public class JavaCreate implements CreateCode {
 
                 if (t.getDataType().toLowerCase().equals("json")) {
                     try {
-                        annotationSpecColumn = AnnotationSpec.builder(Class.forName(""))
-                                .addMember("name", "$S", "json")
+                        annotationSpecColumn = AnnotationSpec.builder(Class.forName("org.hibernate.annotations.Type"))
+                                .addMember("type", "$S", "json")
                                 .build();
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e);

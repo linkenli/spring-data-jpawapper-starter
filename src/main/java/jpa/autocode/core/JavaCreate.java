@@ -197,6 +197,11 @@ public class JavaCreate implements CreateCode {
                             .addMember("updatable", "$L", false)
                             .build();
                     list.add(annotationSpecColumn);
+                } else if (t.getColumnType().equals("tinyint(1)")) {
+                    annotationSpecColumn = AnnotationSpec.builder(Column.class)
+                            .addMember("name", "$S", t.getName().toLowerCase())
+                            .build();
+                    list.add(annotationSpecColumn);
                 } else {
                     annotationSpecColumn = AnnotationSpec.builder(Column.class)
                             .addMember("name", "$S", t.getName().toLowerCase())
